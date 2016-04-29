@@ -1,0 +1,1070 @@
+LOGO
+岁寒
+你凝视深渊，深渊将回以凝视。
+岁寒
+生活
+WEB 技术
+其他技术
+PHP
+iOS
+GitHub
+微博
+作品
+更多
+ RSS
+Search
+  搜索
+Laravel 5 系列入门教程（一）【最适合中国人的 Laravel 教程】
+
+本教程示例代码见：https://github.com/johnlui/Learn-Laravel-5
+
+大家在任何地方卡住，最快捷的解决方式就是去看我的示例代码。
+Laravel 5 中文文档：
+
+1. http://laravel-china.org/docs/5.0
+
+2. http://www.golaravel.com/laravel/docs/5.0/
+
+默认条件
+本文默认你已经有配置完善的 PHP + MySQL 运行环境，懂得 PHP 网站运行的基础知识。跟随本教程走完一遍，你将会得到一个基础的包含登录的简单 blog 系统，并将学会如何使用一些强大的 Laravel 插件和 composer 包（Laravel 插件也是 composer 包）。
+
+软件版本：PHP 5.4+，MySQL 5.1+
+
+本文不推荐完全不懂 PHP 与 MVC 编程的人学习。本文不是 “一步一步跟我做” 教程。本文需要你付出一定的心智去解决一些或大或小的隐藏任务，以达到真正理解 Laravel 运行逻辑的目的。
+
+1. 安装
+许多人被拦在了学习Laravel的第一步，安装。并不是因为安装教程有多复杂，而是因为【众所周知的原因】。在此我推荐一个composer全量中国镜像：http://pkg.phpcomposer.com/ 。推荐以 “修改 composer 的配置文件” 方式配置。
+
+镜像配置完成后，切换到你想要放置该网站的目录下（如 C:\\wwwroot、/Library/WebServer/Documents/、/var/www/html、/etc/nginx/html 等），运行命令：
+
+composer create-project laravel/laravel learnlaravel5 5.0.22
+然后，稍等片刻，当前目录下就会出现一个叫 learnlaravel5 的文件夹。
+
+本系列教程使用 Laravel 5.0 版本，5.1 版本去掉了本系列教程主要讲解的元素(Auth 系统)，不建议使用 5.1 来学习。本系列教程为入门教程，目的是搞清楚 Laravel 的基本使用方法，切忌本末倒置。
+
+然后将网站根目录配置为 learnlaravel5/public。
+如果你不会配置，建议去学会配置，网上资料很多。如果自暴自弃，可以把 的第 29 行 'url' => 'http://localhost', 配置成你的子目录地址，注意，要一直配置到 ***/learnlaravel5/public。
+
+使用浏览器访问你配置的地址，将看到以下画面（我在本地配置的地址为 http://fuck.io:88 ）：
+
+Image
+
+2. 体验 Auth 系统并完成安装
+—— 经过上面的过程，Laravel 5 的安装成功了？
+
+—— 没有o(╯□╰)o
+查看路由文件 `learnlaravel5/app/Http/routes.php` 的代码：
+
+Route::get('/', 'WelcomeController@index');
+
+Route::get('home', 'HomeController@index');
+
+Route::controllers([
+	'auth' => 'Auth\AuthController',
+	'password' => 'Auth\PasswordController',
+]);
+跟随代码里的蛛丝马迹，让我们访问 http://fuck.io:88/home （请自行替换域名），结果竟然跳转到了登陆页？
+
+Image
+
+没错，Laravel 自带了开箱即用的 Auth 系统，连页面都已经写好了。
+
+让我们随意输入邮箱和密码，点击登录，你很可能得到以下画面（Mac 或 Linux 下）：
+
+Image
+
+为什么空白？用开发者工具查看，这个请求的状态码是 500，为什么？
+
+因为 `learnlaravel5/storage` 目录没有 777 权限。
+执行 shell 命令：
+
+cd learnlaravel5
+
+sudo chmod -R 777 storage
+重新访问 http://fuck.io:88/home ，随意输入邮箱和密码，如果你得到以下画面：
+
+Image
+
+那么恭喜你~ Laravel 5 安装成功！
+
+不想配置镜像的同学，可以使用 Laravel 界非常著名的 安正超 搞的安装神器：https://github.com/overtrue/latest-laravel
+
+3. 数据库建立及迁移
+Laravel 5 把数据库配置的地方改到了 `learnlaravel5/.env`，打开这个文件，编辑下面四项，修改为正确的信息：
+
+DB_HOST=localhost
+
+DB_DATABASE=laravel5
+
+DB_USERNAME=root
+
+DB_PASSWORD=password
+推荐新建一个名为 laravel5 的数据库，为了学习方便，推荐使用 root 账户直接操作。
+
+Laravel 已经为我们准备好了 Auth 部分的 migration，运行以下命令执行数据库迁移操作：
+
+php artisan migrate
+得到的结果如下：
+
+Image
+
+如果你运行命令报错，请检查数据库连接设置。
+
+至此，数据库迁移已完成，你可以打开 http://fuck.io:88/home 欢快地尝试注册、登录啦。
+
+4. 模型 Models
+接下来我们将接触Laravel最为强大的部分，Eloquent ORM，真正提高生产力的地方，借用库克的一句话：鹅妹子英！
+
+运行一下命令：
+
+php artisan make:model Article
+
+php artisan make:model Page
+> Laravel 4 时代，我们使用 Generator 插件来新建 Model。现在，Laravel 5 已经把 Generator 集成进了 Artisan。
+
+现在，Artisan 帮我们在 `learnlaravel5/app/` 下创建了两个文件 `Article.php` 和 `Page.php`，这是两个 Model 类，他们都继承了 Laravel Eloquent 提供的 Model 类 `Illuminate\Database\Eloquent\Model`，且都在 `\App` 命名空间下。这里需要强调一下，用命令行的方式创建文件，和自己手动创建文件没有任何区别，你也可以尝试自己创建这两个 Model 类。
+
+Model 即为 MVC 中的 M，翻译为 模型，负责跟数据库交互。在 Eloquent 中，数据库中每一张表对应着一个 Model 类（当然也可以对应多个）。
+
+如果你从其他框架转过来，可能对这里一笔带过的 Model 部分很不适应，没办法，是因为 Eloquent 实在太强大了啦，真的没什么好做的，继承一下 Eloquent 类就能实现很多很多功能了。
+
+如果你想深入地了解 Eloquent，可以阅读系列文章：深入理解 Laravel Eloquent（一）——基本概念及用法
+接下来进行 Article 和 Page 类对应的 articles 表和 pages表的数据库迁移，进入 `learnlaravel5/database/migrations` 文件夹。
+
+在 ***_create_articles_table.php 中修改：
+
+Schema::create('articles', function(Blueprint $table)
+{
+	$table->increments('id');
+	$table->string('title');
+	$table->string('slug')->nullable();
+	$table->text('body')->nullable();
+	$table->string('image')->nullable();
+	$table->integer('user_id');
+	$table->timestamps();
+});
+在 ***_create_pages_table.php 中修改：
+
+Schema::create('pages', function(Blueprint $table)
+{
+	$table->increments('id');
+	$table->string('title');
+	$table->string('slug')->nullable();
+	$table->text('body')->nullable();
+	$table->integer('user_id');
+	$table->timestamps();
+});
+然后执行命令：
+
+php artisan migrate
+成功以后， articles 表和 pages 表已经出现在了数据库里，去看看吧~
+
+5. 数据库填充 Seeder
+在 `learnlaravel5/database/seeds/` 下新建 `PageTableSeeder.php` 文件，内容如下：
+
+<?php
+
+use Illuminate\Database\Seeder;
+use App\Page;
+
+class PageTableSeeder extends Seeder {
+
+  public function run()
+  {
+    DB::table('pages')->delete();
+
+    for ($i=0; $i < 10; $i++) {
+      Page::create([
+        'title'   => 'Title '.$i,
+        'slug'    => 'first-page',
+        'body'    => 'Body '.$i,
+        'user_id' => 1,
+      ]);
+    }
+  }
+
+}
+然后修改同一级目录下的 `DatabaseSeeder.php`中：
+
+// $this->call('UserTableSeeder');
+这一句为
+
+$this->call('PageTableSeeder');
+然后运行命令进行数据填充：
+
+composer dump-autoload
+
+php artisan db:seed
+去看看 pages 表，是不是多了十行数据？
+
+教程（一）代码快照：https://github.com/johnlui/Learn-Laravel-5/archive/tutorial_1.zip
+
+下一步：Laravel 5 系列入门教程（二）【最适合中国人的 Laravel 教程】
+
+WRITTEN BY
+
+avatar
+JohnLui
+
+程序员，Swift Contributor，上架小工具 一键 VPN，正在写《iOS 可视化编程与 Auto Layout》。
+相关日志：
+
+如何在 Laravel 中使用阿里云 OSS
+
+用 Sublime 开发 Laravel —— Sublime Text 插件推荐
+
+Laravel 4.2 中队列服务（queue）的使用感受和踩到的坑
+
+深入理解 Laravel Eloquent（二）——中间操作流（Builder）
+
+如何在 Laravel 中使用 SMTP 发送邮件（适用于 163、QQ、Gmail 等）
+
+标签:	PHP	Laravel	Laravel5	教程	入门教程	最适合中国人的Laravel教程
+2015.3.7   /   热度：158181   /   分类：	Laravel
+← Laravel 5 系列入门教程（二）【最适合中国人的 Laravel 教程】Auto Layout 使用心得（二）—— 实现三等分 →
+评论：
+
+ YiHong
+2016-04-14 11:58
+老师，在实际开发中，每次修改表结构都会在database/migrationgs目录下生产一个.php文件，假如是一个大型的项目，那得生产100多个.php文件。您怎么解决这种问题？
+回复
+ JohnLui
+2016-04-14 12:44
+@YiHong：100多个都不好意思叫大型项目。。。
+回复
+ jokee
+2016-04-05 10:51
+call函数默认会把类里所有的func调用一遍吗？
+多谢
+回复
+ jokee
+2016-04-05 16:44
+@jokee：找了原代码，原来是这样的
+    public function call($class)
+    {
+        $this->resolve($class)->run();
+
+        if (isset($this->command)) {
+            $this->command->getOutput()->writeln("<info>Seeded:</info> $class");
+        }
+    }
+
+BTW,多谢lz的教程
+回复
+ 楠楠猪
+2016-04-02 21:41
+老师你好，我也想把自己的主页变成你的http://fuck.io:88/home，而不是http://localhost/test1/learnlaravel5/public/home，我该怎么做啊，谢谢啦！
+回复
+ 1
+2016-04-11 17:57
+@楠楠猪：虚拟主机里面配置一下
+回复
+ henry
+2016-03-29 14:33
+感谢分享！学到了很多，都按楼主的步骤实现了
+回复
+ 崇拜大神
+2016-03-24 11:06
+好崇拜大神啊
+回复
+ 几只少年
+2016-02-25 21:06
+ 已收藏楼主博客，88年的吧~
+回复
+ JohnLui
+2016-02-25 21:17
+@几只少年：93。。。
+回复
+ jinhaoxu
+2016-03-18 21:37
+@JohnLui：老师你好，我想请问一下：
+1.laravel5.0是不是自带记住登录状态，为什么我没勾选记住我，我重启浏览器后它还是记住我了？？
+2.laravel5.0是不是得自己写限制用户登录错误次数的方法？它原来的ThrottlesLogins在laravel5.0里面好像用不了......
+老师如果您有空的话就回复一下我，或者发邮箱给我，指点一下我这只迷途的“小羔羊”：）
+回复
+ 赵明亮
+2016-02-15 11:26
+学习了
+回复
+ Cindy
+2016-02-08 21:47
+你好,我一直無法連到home目錄,它一直出現Error 404,請問是什麼原因呢?
+回复
+ Happybird
+2016-02-22 18:39
+@Cindy：今天我也出这个问题了，后来发现把apache conf里
+LoadModule rewrite_module modules/mod_rewrite.so前面的# 去掉就行了
+回复
+ Ryuuri
+2016-03-11 11:32
+@Happybird：成功了。
+非常感谢。
+回复
+ mili
+2016-01-26 23:46
+老师你好现在 我按照你的教程开始做 没有下载下来 没有HOME 的控制器 和页面了希望您能更新教程 虽然这个有基础的人来说 不算啥
+回复
+ php新手上路
+2016-01-25 01:31
+老师 您好伟大
+回复
+ T厌氧De鱼
+2016-01-12 13:12
+运行sudo php artisan migrate时
+**************************************
+*     Application In Production!     *
+**************************************
+Do you really wish to run this command? [y/N] y
+
+  [Illuminate\Database\QueryException]
+  SQLSTATE[42000]: Syntax error or access violation: 1067 Invalid default value for 'created_at'
+  (SQL: create table `users` (`id` int unsigned not null auto_increment primary key, `name` varch
+  ar(255) not null, `email` varchar(255) not null, `password` varchar(60) not null, `remember_tok
+  en` varchar(100) null, `created_at` timestamp default 0 not null, `updated_at` timestamp defaul
+  t 0 not null) default character set utf8 collate utf8_unicode_ci)
+
+  [PDOException]
+  SQLSTATE[42000]: Syntax error or access violation: 1067 Invalid default value for 'created_at'
+回复
+ wanyutang
+2016-02-21 05:20
+@T厌氧De鱼：執行 composer update 後再 sudo php artisan migrate 看看
+參考：https://github.com/twostairs/paperwork/issues/337
+回复
+ eddywon
+2016-01-11 18:30
+Page::create([
+        'title'   => 'Title '.$i,
+        'slug'    => 'first-page',
+        'body'    => 'Body '.$i,
+        'user_id' => 1,
+      ]);
+貌似这里有问题，应该改成下面的才能运行来着
+DB::table('pages')->insert([
+        'title'   => 'Title '.$i,
+        'slug'    => 'first-page',
+        'body'    => 'Body '.$i,
+        'user_id' => 1,
+      ]);
+回复
+ JohnLui
+2016-01-11 18:52
+@eddywon：Page 类需要在前面 use。
+回复
+ 末路伯爵
+2016-01-08 10:37
+请问下这两个文件是怎么来的***_create_articles_table.php、***_create_pages_table.php，我跟着教程跟走的只有users和password的两个文件。我按照上面路由配置之后访问home页面直接报错：
+ReflectionException in Route.php line 264:
+Class App\Http\Controllers\HomeController does not exist
+in Route.php line 264
+at ReflectionMethod->__construct('App\Http\Controllers\HomeController', 'index') in Route.php line 264
+at Route->signatureParameters('Illuminate\Database\Eloquent\Model') in Router.php line 838
+at Router->substituteImplicitBindings(object(Route)) in Router.php line 823
+at Router->substituteBindings(object(Route)) in Router.php line 806
+at Router->findRoute(object(Request)) in Router.php line 670
+at Router->dispatchToRoute(object(Request)) in Router.php line 654
+at Router->dispatch(object(Request)) in Kernel.php line 246
+at Kernel->Illuminate\Foundation\Http\{closure}(object(Request))
+at call_user_func(object(Closure), object(Request)) in Pipeline.php line 52
+at Pipeline->Illuminate\Routing\{closure}(object(Request)) in CheckForMaintenanceMode.php line 44
+at CheckForMaintenanceMode->handle(object(Request), object(Closure))
+at call_user_func_array(array(object(CheckForMaintenanceMode), 'handle'), array(object(Request), object(Closure))) in Pipeline.php line 124
+at Pipeline->Illuminate\Pipeline\{closure}(object(Request))
+at call_user_func(object(Closure), object(Request)) in Pipeline.php line 32
+at Pipeline->Illuminate\Routing\{closure}(object(Request))
+at call_user_func(object(Closure), object(Request)) in Pipeline.php line 102
+at Pipeline->then(object(Closure)) in Kernel.php line 132
+at Kernel->sendRequestThroughRouter(object(Request)) in Kernel.php line 99
+at Kernel->handle(object(Request)) in index.php line 53 。
+能帮忙解答下吗？我的版本是5.2。
+回复
+ fade
+2016-01-13 17:18
+@末路伯爵：5.0以后的版本移除了auth模块。教程一开始就说了以5.0版本来写的。
+我用5.1也出了这个问题。。
+回复
+ Aicy
+2016-03-04 13:56
+@fade：,请问你后面是怎么解决这个问题的,在5.1上
+回复
+ arthur
+2016-03-16 12:00
+@Aicy：很简单，执行php artisan make:auth就好了，参见官方文档：https://laravel.com/docs/5.2/authentication。
+回复
+ 小七
+2016-01-06 17:16
+大神，全局类在哪里写，怎么调用啊，求指点啊
+回复
+ JohnLui
+2016-01-06 17:25
+@小七：类都是全局的呀。。。
+回复
+ 小七
+2016-01-06 17:30
+@JohnLui：我不知道这样的全局函数放在哪里怎么调用
+回复
+ JohnLui
+2016-01-06 17:30
+@小七：学习下 命名空间，就明白了
+回复
+ iswant
+2016-01-05 10:34
+刚安装的laravel5.2，发现session不能用，这个问题很是扯淡，不知道还有没有人遇到这个问题，详细描述如下：
+http://zhidao.baidu.com/question/2076165870789234268.html
+回复
+ Eric
+2016-01-04 15:26
+你好，我执行php artisan db:seed命令时出现以下错误
+[Illuminate\Database\QueryException]
+SQLSTATE[42S22]: Column not found: 1054 Unknown column 'title' in 'field li
+st' (SQL: insert into `pages` (`title`, `slug`, `body`, `user_id`, `updated
+_at`, `created_at`) values (Title 0, first-page, Body 0, 1, 2016-01-04 07:2
+4:15, 2016-01-04 07:24:15))
+[PDOException]
+SQLSTATE[42S22]: Column not found: 1054 Unknown column 'title' in 'field li
+st'
+回复
+ acaxia
+2016-01-07 17:54
+@Eric：数据库里没有title字段吧
+回复
+ 谢谢
+2015-12-31 11:54
+非常感谢
+回复
+ 丢小丢
+2015-12-27 20:31
+根本没有home目录 5.0.22 版本
+回复
+ proof
+2015-12-24 16:51
+[Illuminate\Database\QueryException]
+  SQLSTATE[42000]: Syntax error or access violation: 1067 Invalid default value for 'created_at' (SQL: create table `users` (`id` int unsigned not null auto_increment primary k
+  ey, `name` varchar(255) not null, `email` varchar(255) not null, `password` varchar(60) not null, `remember_token` varchar(100) null, `created_at` timestamp default 0 not nul
+  l, `updated_at` timestamp default 0 not null) default character set utf8 collate utf8_unicode_ci)
+
+我在执行php artisan migrate的时候就一直报这个错是怎么回事啊。。
+回复
+ 何笙
+2015-12-14 17:21
+你好，我在做一个注册，完全没有弄明白，老师能给我一个思路么，我找了很多文件都没有解决，我注册的时候明明把E-mail去掉了，但是每次注册的时候还要提示我The email field is required.   老师能给我一个大概的思路么。
+回复
+1 2 3 4 5 6 ... »
+发表评论：
+
+ 昵称
+
+ 邮件地址 (选填)
+
+ 个人主页 (选填)
+
+发表评论
+友情链接： #Auto Layout Club #木月土 #Mukti's Blog #住范儿 #孙伯图 #Arron.y 京ICP备13030650号
+© 2011-2016 岁寒  |  Powered by Emlog
+
+
+LOGO
+岁寒
+你凝视深渊，深渊将回以凝视。
+岁寒
+生活
+WEB 技术
+其他技术
+PHP
+iOS
+GitHub
+微博
+作品
+更多
+ RSS
+Search
+  搜索
+Laravel 5 系列入门教程（二）【最适合中国人的 Laravel 教程】
+
+本教程示例代码见：https://github.com/johnlui/Learn-Laravel-5
+
+大家在任何地方卡住，最快捷的解决方式就是去看我的示例代码。
+
+我们将改变学习路线，不再像 Laravel 4 教程那样先构建登录系统。在本篇教程中，我们将一起构建 Pages 的管理功能，尝试 Laravel 的路由和 PHP 的命名空间。
+
+1. 路由
+Laravel 中的路由，跟其他 PHP 框架一样，作用是把各种请求分流到各个控制器。
+
+在 `learnlaravel5/app/Http/routes.php` 的末尾添加以下代码：
+
+Route::group(['prefix' => 'admin', 'namespace' => 'Admin'], function()
+{
+  Route::get('/', 'AdminHomeController@index');
+});
+这表示创建了一个路由组。
+
+1. `'prefix' => 'admin'` 表示这个路由组的 url 前缀是 /admin，也就是说中间那一行代码 `Route::get('/'` 对应的链接不是 http://fuck.io:88/ 而是 http://fuck.io:88/admin ，如果这段代码是 `Route::get('fuck'` 的话，那么 URL 就应该是 http://fuck.io:88/admin/fuck 。
+
+2. `'namespace' => 'Admin'` 表示下面的 `AdminHomeController@index` 不是在 `\App\Http\Controllers\AdminHomeController@index` 而是在 `\App\Http\Controllers\Admin\AdminHomeController@index`，加上了一个命名空间的前缀。
+
+如果你用过 Laravel 4，会发现 Laravel 5 的命名空间规划比较怪异，这其实是一个非常大的进步。Laravel 4 其实已经全面引入了命名空间这个强大的特性，但是为了“降低学习成本”，把 路由、控制器、模型 的默认命名空间全部设置成了顶级命名空间，这个举动反而让很多人比较轻易地“上手”了 Laravel，但是在用了一段时间以后，还需要翻越一堵高墙，那就是命名空间，而且有了前面的“容易上手”的印象作为铺垫，后期的学习会更加困难。Laravel 5 把命名空间全部隔开，控制器在 `\App\Http\Controllers`，模型在 `\App`，让我们在刚上手的时候就体验命名空间分离的感觉，总体上其实是会降低学习成本的。
+
+2. 控制器
+我们可以使用 Artisan 非常方便地构建控制器：
+
+php artisan make:controller Admin/AdminHomeController
+得到 `learnlaravel5/app/Http/Controllers/Admin/AdminHomeController.php` 文件。
+
+在 `class AdminHomeController extends Controller {` 上面增加一行：
+
+use App\Page;
+修改 index() 的代码如下：
+
+public function index()
+{
+  return view('AdminHome')->withPages(Page::all());
+}
+控制器中文文档：http://laravel-china.org/docs/5.0/controllers
+
+控制器中涉及到了许多的命名空间知识，可以参考 PHP 命名空间 解惑。
+
+3. 视图
+新建 `learnlaravel5/resources/views/AdminHome.blade.php`：
+
+@extends('app')
+
+@section('content')
+<div class="container">
+  <div class="row">
+    <div class="col-md-10 col-md-offset-1">
+      <div class="panel panel-default">
+        <div class="panel-heading">后台首页</div>
+
+        <div class="panel-body">
+
+        <a href="{{ URL('admin/pages/create') }}" class="btn btn-lg btn-primary">新增</a>
+
+          @foreach ($pages as $page)
+            <hr>
+            <div class="page">
+              <h4>{{ $page->title }}</h4>
+              <div class="content">
+                <p>
+                  {{ $page->body }}
+                </p>
+              </div>
+            </div>
+            <a href="{{ URL('admin/pages/'.$page->id.'/edit') }}" class="btn btn-success">编辑</a>
+
+            <form action="{{ URL('admin/pages/'.$page->id) }}" method="POST" style="display: inline;">
+              <input name="_method" type="hidden" value="DELETE">
+              <input type="hidden" name="_token" value="{{ csrf_token() }}">
+              <button type="submit" class="btn btn-danger">删除</button>
+            </form>
+          @endforeach
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+@endsection
+视图的基本用法在此不再赘述，请阅读中文文档：http://laravel-china.org/docs/5.0/views
+
+访问 http://fuck.io:88/admin 得到如下页面：
+
+Image
+
+至此，包含 路由 》 控制器 》 模型 》 视图 的整个流程都已经完成。
+
+4. 完成 Pages 管理功能
+接下来，我将记录下我实现 Pages 管理功能的过程，不再做过多的阐述。大家有问题可以直接在本文下面留言，我会及时回复。
+
+4.1 修改路由 learnlaravel5/app/Http/routes.php
+
+Route::group(['prefix' => 'admin', 'namespace' => 'Admin'], function()
+{
+  Route::get('/', 'AdminHomeController@index');
+  Route::resource('pages', 'PagesController');
+});
+此处增加了一条“资源控制器”，中文文档地址：http://laravel-china.org/docs/5.0/controllers#restful-resource-controllers
+
+4.2 创建 learnlaravel5/app/Http/Controllers/Admin/PagesController.php
+
+运行：
+
+php artisan make:controller Admin/PagesController
+4.3 修改 learnlaravel5/app/Http/Controllers/Admin/PagesController.php 为：
+
+<?php namespace App\Http\Controllers\Admin;
+
+use App\Http\Requests;
+use App\Http\Controllers\Controller;
+
+use Illuminate\Http\Request;
+
+use App\Page;
+
+use Redirect, Input, Auth;
+
+class PagesController extends Controller {
+
+	/**
+	 * Show the form for creating a new resource.
+	 *
+	 * @return Response
+	 */
+	public function create()
+	{
+		return view('admin.pages.create');
+	}
+
+	/**
+	 * Store a newly created resource in storage.
+	 *
+	 * @return Response
+	 */
+	public function store(Request $request)
+	{
+		$this->validate($request, [
+			'title' => 'required|unique:pages|max:255',
+			'body' => 'required',
+		]);
+
+		$page = new Page;
+		$page->title = Input::get('title');
+		$page->body = Input::get('body');
+		$page->user_id = 1;//Auth::user()->id;
+
+		if ($page->save()) {
+			return Redirect::to('admin');
+		} else {
+			return Redirect::back()->withInput()->withErrors('保存失败！');
+		}
+
+	}
+
+	/**
+	 * Show the form for editing the specified resource.
+	 *
+	 * @param  int  $id
+	 * @return Response
+	 */
+	public function edit($id)
+	{
+		return view('admin.pages.edit')->withPage(Page::find($id));
+	}
+
+	/**
+	 * Update the specified resource in storage.
+	 *
+	 * @param  int  $id
+	 * @return Response
+	 */
+	public function update(Request $request,$id)
+	{
+		$this->validate($request, [
+			'title' => 'required|unique:pages,title,'.$id.'|max:255',
+			'body' => 'required',
+		]);
+
+		$page = Page::find($id);
+		$page->title = Input::get('title');
+		$page->body = Input::get('body');
+		$page->user_id = 1;//Auth::user()->id;
+
+		if ($page->save()) {
+			return Redirect::to('admin');
+		} else {
+			return Redirect::back()->withInput()->withErrors('保存失败！');
+		}
+	}
+
+	/**
+	 * Remove the specified resource from storage.
+	 *
+	 * @param  int  $id
+	 * @return Response
+	 */
+	public function destroy($id)
+	{
+		$page = Page::find($id);
+		$page->delete();
+
+		return Redirect::to('admin');
+	}
+
+}
+4.4 创建视图文件
+
+首先在 learnlaravel5/resources/views 下创建 admin/pages 两级文件夹。
+
+然后创建 learnlaravel5/resources/views/admin/pages/create.blade.php：
+
+@extends('app')
+
+@section('content')
+<div class="container">
+  <div class="row">
+    <div class="col-md-10 col-md-offset-1">
+      <div class="panel panel-default">
+        <div class="panel-heading">新增 Page</div>
+
+        <div class="panel-body">
+
+          @if (count($errors) > 0)
+            <div class="alert alert-danger">
+              <strong>Whoops!</strong> There were some problems with your input.<br><br>
+              <ul>
+                @foreach ($errors->all() as $error)
+                  <li>{{ $error }}</li>
+                @endforeach
+              </ul>
+            </div>
+          @endif
+
+          <form action="{{ URL('admin/pages') }}" method="POST">
+            <input type="hidden" name="_token" value="{{ csrf_token() }}">
+            <input type="text" name="title" class="form-control" required="required">
+            <br>
+            <textarea name="body" rows="10" class="form-control" required="required"></textarea>
+            <br>
+            <button class="btn btn-lg btn-info">新增 Page</button>
+          </form>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+@endsection
+之后创建 learnlaravel5/resources/views/admin/pages/edit.blade.php：
+
+@extends('app')
+
+@section('content')
+<div class="container">
+  <div class="row">
+    <div class="col-md-10 col-md-offset-1">
+      <div class="panel panel-default">
+        <div class="panel-heading">编辑 Page</div>
+
+        <div class="panel-body">
+
+          @if (count($errors) > 0)
+            <div class="alert alert-danger">
+              <strong>Whoops!</strong> There were some problems with your input.<br><br>
+              <ul>
+                @foreach ($errors->all() as $error)
+                  <li>{{ $error }}</li>
+                @endforeach
+              </ul>
+            </div>
+          @endif
+
+          <form action="{{ URL('admin/pages/'.$page->id) }}" method="POST">
+            <input name="_method" type="hidden" value="PUT">
+            <input type="hidden" name="_token" value="{{ csrf_token() }}">
+            <input type="text" name="title" class="form-control" required="required" value="{{ $page->title }}">
+            <br>
+            <textarea name="body" rows="10" class="form-control" required="required">{{ $page->body }}</textarea>
+            <br>
+            <button class="btn btn-lg btn-info">编辑 Page</button>
+          </form>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+@endsection
+4.5 查看结果
+
+后台首页 http://fuck.io:88/admin ：
+
+Image
+
+新增 Page http://fuck.io:88/admin/pages/create ：
+
+Image
+
+编辑 Page http://fuck.io:88/admin/pages/1/edit ：
+
+Image
+
+页面上的新增、编辑、删除的功能均已经完成，并且加入了表单验证，Pages 管理功能完成！
+
+
+
+教程（二）代码快照：https://github.com/johnlui/Learn-Laravel-5/archive/tutorial_2.zip
+
+下一步：Laravel 5 系列入门教程（三）【最适合中国人的 Laravel 教程】
+
+WRITTEN BY
+
+avatar
+JohnLui
+
+程序员，Swift Contributor，上架小工具 一键 VPN，正在写《iOS 可视化编程与 Auto Layout》。
+相关日志：
+
+如何在 Laravel 中使用阿里云 OSS
+
+用 Sublime 开发 Laravel —— Sublime Text 插件推荐
+
+Laravel 4.2 中队列服务（queue）的使用感受和踩到的坑
+
+深入理解 Laravel Eloquent（二）——中间操作流（Builder）
+
+如何在 Laravel 中使用 SMTP 发送邮件（适用于 163、QQ、Gmail 等）
+
+标签:	PHP	Laravel	入门教程	最适合中国人的Laravel教程	Laravel5教程
+2015.3.8   /   热度：74735   /   分类：	Laravel
+← Laravel 5 系列入门教程（三）【最适合中国人的 Laravel 教程】Laravel 5 系列入门教程（一）【最适合中国人的 Laravel 教程】 →
+评论：
+
+ 轻歌
+2016-04-17 10:19
+如果我想用Model管理多个MySQL数据库，要怎么做？
+回复
+ 梦遥奇缘
+2016-03-31 00:15
+博主，请问下关于访问admin出现404时，怎样解决nginx的伪静态问题？在官网上看到有句如何优雅的使用伪静态，但是配置后直接nginx不能重启了，求贴nginx配置。
+回复
+ 强有力的实力丶
+2016-03-30 17:47
+为什么我按照楼主的教程做完以后，没有显示bootstarp的样式，点击新增、编辑、删除后跳转报错。下面是提示信息：
+Sorry, the page you are looking for could not be found.
+NotFoundHttpException in RouteCollection.php line 145:
+
+求解这是什么情况~~~~~
+回复
+ mozhe
+2016-03-27 21:57
+博主你好，我想问下，为什么我用return Redirect::back()->withInput()->withErrors('保存失败！');页面上得不到$errors，也没有保留之前填写的数据呢？
+回复
+ JohnLui
+2016-03-27 23:40
+@mozhe：Laravel 5.2 已经改变了很多系统组件的工作方式，使用 redirect()->back() 试试吧
+回复
+ 单独
+2016-03-23 11:26
+create.blade.php
+中的(count($errors) > 0)  errors在哪定义的？提示变量未定义
+回复
+ 东方财富
+2016-01-22 19:39
+楼主 这个框架怎么写form提交地址?
+回复
+ 无限上网
+2016-01-17 20:04
+FatalErrorException in AdminHomeController.php
+line 16: Class 'app\Page' not found
+
+我把use app\Page;改成小写也不行，
+我的文件夹名是小写的
+回复
+ Carrie
+2016-01-28 13:30
+@无限上网：同问，文件目录是小写app，程序中的namespace全是App...
+类似use App\Http\Requests;在app下这个路径还是存在的，但是App\Page没有这个路径...
+回复
+ 霜落夜白
+2016-04-05 13:26
+@无限上网：这个应该是model吧。。。有建page 模型么
+回复
+ 5959
+2015-12-02 16:34
+报错：Class 'App\Page' not found
+回复
+ yanhws
+2016-01-08 17:33
+@5959：你命名空间的 app 可能是小写的 改成小写应该就好了
+回复
+ motoon
+2015-12-01 14:26
+老师你好，
+@extends('app')
+中app文件在哪里啊，为什么找不到呢？
+回复
+ JohnLui
+2015-12-01 15:01
+@motoon：app.blade.php
+回复
+ tju
+2015-11-24 00:12
+你是大神！初学者的福音啊！
+回复
+ 李传奇
+2015-11-18 16:36
+@extends('app')
+
+@section('content')
+<div class="container">
+  <div class="row">
+    <div class="col-md-10 col-md-offset-1">
+      <div class="panel panel-default">
+        <div class="panel-heading">后台首页</div>
+
+        <div class="panel-body">
+
+        <a href="{{ URL('admin/pages/create') }}" class="btn btn-lg btn-primary">新增</a>
+
+          @foreach ($pages as $page)
+            <hr>
+            <div class="page">
+              <h4>{{ $page->title }}</h4>
+              <div class="content">
+                <p>
+                  {{ $page->body }}
+                </p>
+              </div>
+            </div>
+
+请问@foreach ($pages as $page)中pages的定义在哪里？急切求解答
+回复
+ sha
+2015-11-22 10:05
+@李传奇：视图由AdminHomeController的index方法传送过去的
+view('AdminHome')->withPages(Page::all())
+
+page模型继承model模型
+class Page extends Model
+
+model模型中有一个all方法，查询数据库所有字段
+
+withPages是指查询Pages表
+
+相关文件：
+page模型：app/Page.php
+model模型: vendor/laravel/framework/src/Illuminate/Database/Eloquent/Model.php
+AdminHomeController控制器：app/Http/Controllers/Admin/AdminHomeController.php
+个人理解，如有误请更正。
+回复
+ laravel初学者
+2015-11-17 17:09
+楼主，form要加上上传文件的功能，加了这句
+<form action="{{ URL('admin/pages') }}" method="POST" enctype="multipart/form-data">
+   <input type="file" name="myfile" multiple="true">，在点击提交的时候报“There were some problems with your input.
+
+The myfile format is invalid.”，向您请教下这个是哪里出了问题？
+回复
+ JohnLui
+2015-11-17 17:14
+@laravel初学者：你上传的文件类型有问题
+回复
+ nashJG
+2015-11-13 21:47
+老师，我新安装的laravel5，用POST方法提交表单总是出现 TokenMismatchException错误
+我的页面表单代码：
+<form action="p1" method="POST">
+    <input type="hidden" name="_token" value="<?php echo csrf_token() ?>">
+    <input type="submit" vlaue="Test">
+</form>
+路由中添加了：
+Route::post('p1',function(){
+    return "hello laravel by POST!";
+});
+
+我把csrf禁用之后可以正常显示，开始csrf总是token mismatchexception，请您帮忙解答一下
+回复
+ JohnLui
+2015-11-13 23:46
+@nashJG：对比一下你的和我的视图文件，你就会明白的
+回复
+ nashJG
+2015-11-14 00:10
+@JohnLui：对比了一下您的表单，您用的是
+<input type="hidden" name="_token" value="{{ csrf_token() }}">
+我试了这种方法，还是提示TokenMismatchException in VerifyCsrfToken.php line 46:
+回复
+ hans
+2015-11-07 09:33
+GET                     /admin                             索引     AdminHomeController::index
+GET                     /admin/pages/create     创建     PagesController::create
+POST             /admin/pages                     保存     PagesController::store
+GET                     /admin/pages/{id}             显示            PagesController::show
+GET                     /admin/pages/{id}/edit       编辑    PagesController::edit
+PUT/PATCH     /admin/pages/{id}             更新            PagesController::update
+DELETE             /admin/pages/{pages}     删除      PagesController::destroy
+把这个对应关系加进去，可以看的更清楚
+回复
+ hans
+2015-11-07 09:24
+HTTP请求 -> 路由 -> 控制器 -> 模型 -> 视图
+回复
+ 牛
+2015-11-05 15:42
+楼主大大 请教一下 我按照教程操作，页面显示都正常，就是执行新增和编辑的时候 PagesController报错：
+Undefined variable: request
+页面里也引入了use Illuminate\Http\Request;
+$this->validate($request, []); 就是这个$request找不到 。是什么原因呢？
+回复
+ JohnLui
+2015-11-06 00:40
+@牛：因为 public function store(Request $request) 括号里的参数你可能没写
+回复
+ Yingdynasty
+2015-11-03 11:43
+问题已经解决了
+’admin\xxxx\‘.$xxxx->id
+其中这个反斜杠是不能省略的
+回复
+ Yingdynasty
+2015-11-03 11:32
+博主 麻烦问您一下
+view里面的这个完成修改：
+  <form action="{{ URL('home/containers'.$container->id.)}}" method="POST">
+            <input name="_method" type="hidden" value="PUT">
+            <input type="hidden" name="_token" value="{{ csrf_token() }}">
+   </form>
+
+controller里面的
+    public function update(Request $request,$id)
+    {
+        $this->validate($request, [
+            'id' => 'required',
+            'container_code' => 'required',
+        ]);
+
+        $Container = Container::find($id);
+                    //还有其他代码
+        if($Container->save()){
+            return Redirect::to('home/container_info');//这个页面确实存在
+            }
+            else{
+            return Redirect::back()->withInput()->withErrors('保存失败！');
+            }
+
+        }
+
+但是完成修改时候他会报错
+Sorry, the page you are looking for could not be found.
+1/1
+NotFoundHttpException in RouteCollection.php line 145:
+
+万分感谢博主的时间~~
+Ying
+回复
+ Jennifer
+2015-11-02 10:52
+刚才的问题，我已经知道了。不好意思，打扰了。
+回复
+ Jennifer
+2015-11-02 10:49
+Class 'App\Http\Controllers\Admin\Input' not found
+报错没有引入Input和Redirect这两个文件，请问这两个文件在什么地方啊？
+回复
+ loveleo99
+2016-03-22 17:00
+@Jennifer：百度到的，测试可用
+use Illuminate\Support\Facades\Input;
+use Illuminate\Support\Facades\Redirect;
+回复
+1 2 3 4 5
+发表评论：
+
+ 昵称
+
+ 邮件地址 (选填)
+
+ 个人主页 (选填)
+
+发表评论
+友情链接： #Auto Layout Club #木月土 #Mukti's Blog #住范儿 #孙伯图 #Arron.y 京ICP备13030650号
+© 2011-2016 岁寒  |  Powered by Emlog
